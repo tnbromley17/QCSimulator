@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width , initial-scale=1.0">
+    <title>Quantum Computing Simulator</title>
+    <link rel="stylesheet" href="jquery-ui-1.13.1/jquery-ui.theme.base.css">
+    <link rel="stylesheet" href="styles.css"> <!--Allows for webpage font/colour customisation etc.-->
+    <style>
+        #ui-widget-header p, .ui-widget-content p { margin: 0; }
+    </style>
+
+    <!-- Enables jQuery, jQueryUI, math.js for index.html -->
+    <script src="jquery-3.6.0.js"></script>
+    <script src="jquery-ui-1.13.1/jquery-ui.js"></script>
+    <script src="math.js" type="text/javascript"></script>
+
+    <script> //The corresponding matrices for each gate
+        const I = math.matrix([[1, 0], [0, 1]]);
+        const X = math.matrix([[0, 1], [1, 0]]);
+        const Y = math.matrix([[0, math.complex(0, -1)], [math.complex(0, 1), 0]]);
+        const Z = math.matrix([[1, 0], [0, -1]]);
+        const mH = math.matrix([[1, 1], [1, -1]]);
+        const oneRoot2 = math.divide(1, math.sqrt(2));
+        const H = math.multiply(oneRoot2, mH); <!-- Hadamard Gate has to be a matrix which calls other variables due to its complexity -->
+        const S = math.matrix([[1, 0], [0, math.complex(0, 1)]]);
+        const T = math.sqrt(S); <!-- Since T = sqrt(S) -->
+        const CNOT = math.matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]);
+        const SWAP = math.matrix([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]);
+    </script>
+
+    <script>
+        let out_qubit;
+        let qubits = []; //Array which contains qubits is formed
+        let num_qubits = 0;
+        let kroneckerProduct;
+        let drag = [];
+        let gates = [];
+        let out_gate;
+        let output;
+    </script>
+
+    <script>
+        function addQubit() { //Function which adds a qubit (Initiated after clicking on button_addQubit
+            let value_xa = parseFloat(prompt("Insert Real Value For X"));
+            let value_xb = parseFloat(prompt("Insert Complex Value For X"));
+            let value_ya = parseFloat(prompt("Insert Real Value For Y"));
+            let value_yb = parseFloat(prompt("Insert Complex Value For Y"));
+            let qubit_unitlength = math.matrix([[math.complex(value_xa, value_xb), math.complex(value_ya, value_yb)]]);
+            num_qubits = num_qubits + 1;
+            qubits.push(qubit_unitlength);
+        }
+    </script>
+
+    <script>
+        function dragI() {
+            drag.push(I);
+        }
+
+        function dragX() {
+            drag.push(X);
+        }
+
+        function dragY() {
+            drag.push(Y);
+        }
+
+        function dragZ() {
+            drag.push(Z);
+        }
+
+        function dragH() {
+            drag.push(H);
+        }
+
+        function dragS() {
+            drag.push(S);
+        }
+
+        function dragT() {
+            drag.push(T);
+        }
+
+        function dragCNOT() {
+            drag.push(CNOT);
+        }
+
+        function dragSWAP() {
+            drag.push(SWAP);
+        }
+    </script>
+
+    <script>
+        $( function() {
+            $circuit = $( "#circuit" )
+
+            $circuit.droppable({
+                accept: '.object',
+                classes: {
+                    "ui-droppable-active": "ui-state-highlight"
+                },
+                drop: function() {
+                    snappedObject();
+                }
+            });
+        });
+
+    </script>
+
+    <script>
+        function snappedObject() {
+            gates.push(drag[0]);
+            if (gates.length - 1 < 1) {
+                out_gate = drag[drag.length - 1];
+            } else {
+                out_gate = math.multiply([out_gate, gates[gates.length - 1]]);
+            }
+            drag.length = 0;
+        }
+    </script>
+
+    <script>
+        function kronecker() {
+            if (qubits.length - 1 < 2) {
+                alert('You can only do this if you have more than one qubit.')
+            } else {
+                if (out_qubit == null) {
+                    let q0 = qubits[0];
+                    let q1 = qubits[1];
+                    out_qubit = math.kron([q0, q1]);
+                } else {
+                   out_qubit = math.kron([out_qubit, qubits[qubits.length - 1]]);
+                }
+            }
+        }
+    </script>
+
+    <script>
+        function calculate() {
+            if (qubits.length - 1 < 1) {
+                alert('You cannot launch the simulator without a qubit!')
+            } else if (qubits.length - 1 > 1) {
+                if (out_qubit == null) {
+                    alert('Apply the Kronecker function first.')
+                } else {
+                   execute();
+                }
+            } else {
+                out_qubit = qubits[0];
+                execute();
+            }
+        }
+    </script>
+
+    <script>
+        function execute() {
+            output = math.multiply([out_qubit, out_gate]);
+            document.write(output);
+        }
+    </script>
+
+  </head>
+
+<body>
+    <h1> Quantum Computing Simulator </h1>
+    <div class="widget">
+        <input id="help" type="button" onclick="alert('Choose from one of the gates and simply drag and drop onto either input |0> or |1>.')" value="HELP">
+    <button onclick="darkMode()">LIGHT/DARK MODE</button>
+
+    <script>
+        function darkMode() {
+            const element = document.body;
+            element.classList.toggle("dark-mode");
+        }
+    </script>
+    </div>
+    <h3> ADD A QUBIT HERE: </h3>
+    <div>
+        <input id="button_addQubit" type="button" value="ADD QUBIT">
+    </div>
+    <h3> ADD A GATE HERE: </h3>
+    <h4>SINGLE-QUBIT GATES</h4>
+    <div>
+        <input id="button_addI" type="button" value = "IDENTITY GATE">
+    </div>
+    <div>&nbsp;</div>
+    <div>
+        <input id="button_addX" type="button" value = "PAULI-X GATE">
+        <input id="button_addY" type="button" value = "PAULI-Y GATE">
+        <input id="button_addZ" type="button" value = "PAULI-Z GATE">
+    </div>
+    <div>&nbsp;</div>
+    <div>
+        <input id="button_addH" type="button" value = "HADAMARD GATE">
+        <input id="button_addS" type="button" value = "PHASE GATE">
+        <input id="button_addT" type="button" value = "π/8 GATE">
+    </div>
+    <h4>MULTI-QUBIT GATES</h4>
+    <div>
+        <input id="button_addCNOT" type="button" value = "CNOT GATE">
+        <input id="button_addSWAP" type="button" value = "SWAP GATE">
+    </div>
+    <div>&nbsp;</div>
+    <div>
+        <input id="button_Launch" type="button" value = "LAUNCH">
+        <input id="button_Kronecker" type="button" value = "Apply Kronecker Product">
+    </div>
+    <script>
+        $(document).ready(function() {
+            $("#button_addQubit").click(function() {
+                addQubit();
+                $( "<div id='qubit' class='object'><p>q</p></div>" ).appendTo( "body" ).draggable({ snap: true });
+            });
+
+            $("#button_addI").click(function() {
+                $( "<div id='identity_gate' class='object'><p>I</p></div>" ).appendTo( "body" ).draggable( {
+                    snap: true,
+                    start: function() {
+                        dragI();
+                    }
+                });
+            });
+
+            $("#button_addX").click(function() {
+                $( "<div id='pauliX_gate' class='object'><p>X</p></div>" ).appendTo( "body" ).draggable({
+                    snap: true,
+                    start: function() {
+                        dragX();
+                    }
+                });
+            });
+
+            $("#button_addY").click(function() {
+                $( "<div id='pauliY_gate' class='object'><p>Y</p></div>" ).appendTo( "body" ).draggable({
+                    snap: true,
+                    start: function() {
+                        dragY();
+                    }
+                });
+            });
+
+            $("#button_addZ").click(function() {
+                $( "<div id='pauliZ_gate' class='object'><p>Z</p></div>" ).appendTo( "body" ).draggable({
+                    snap: true,
+                    start: function() {
+                        dragZ();
+                    }
+                });
+            });
+
+            $("#button_addH").click(function() {
+                $( "<div id='hadamard_gate' class='object'><p>H</p></div>" ).appendTo( "body" ).draggable({
+                    snap: true,
+                    start: function() {
+                        dragH();
+                    }
+                });
+            });
+
+            $("#button_addS").click(function() {
+                $( "<div id='s_gate' class='object'><p>S</p></div>" ).appendTo( "body" ).draggable({
+                    snap: true,
+                    start: function() {
+                        dragS();
+                    }
+                });
+            });
+
+            $("#button_addT").click(function() {
+                $( "<div id='t_gate' class='object'><p>T</p></div>" ).appendTo( "body" ).draggable({
+                    snap: true,
+                    start: function() {
+                        dragT();
+                    }
+                });
+            });
+
+            $("#button_addCNOT").click(function() {
+                $( "<div id='cnot_gate' class='object'><p>CNOT</p></div>" ).appendTo( "body" ).draggable({
+                    snap: true,
+                    start: function() {
+                        dragCNOT();
+                    }
+                });
+            });
+
+            $("#button_addSWAP").click(function() {
+                $( "<div id='swap_gate' class='object'><p>SWAP</p></div>" ).appendTo( "body" ).draggable({
+                    snap: true,
+                    start: function() {
+                        dragSWAP();
+                    }
+                });
+            });
+
+            $("#button_Kronecker").click(function() {
+                kronecker();
+            });
+
+
+            $("#button_Launch").click(function() {
+                calculate();
+            });
+        })
+    </script>
+
+    <div id="circuit" class="ui-widget-content ui-state-default">
+        <p>CIRCUIT</p>
+    </div>
+<p>Any added and unused qubits and gates appear here:</p>
+</body>
+</html>
